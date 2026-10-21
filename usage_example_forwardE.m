@@ -23,8 +23,9 @@ function usage_example_forwardE()
     V_list = compute_planetary_motion(t_range,V0,orbit_params);
     h_ref=0.1;
 
+    G_rate= @(t,v) gravity_rate_func(t, v,orbit_params);
     
-    [t_list,X_list,h_avg, num_evals] = explicit_RK_fixed_step_integration(gravity_rate_func(t_range,V0,orbit_params),t_range,V0,h_ref,BT);
+    [t_list,X_list,h_avg, num_evals] = explicit_RK_fixed_step_integration(G_rate,t_range,V0,h_ref,BT);
 
     axis equal; axis square;
     axis([-20,20,-20,20])
