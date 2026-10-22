@@ -17,17 +17,17 @@
 function [t_list,X_list,h_avg, num_evals] = explicit_RK_fixed_step_integration ...
 (rate_func_in,tspan,X0,h_ref,BT_struct)
     num_evals = 0;
-    N = ceil((tspan(2)-tspan(1))/h_ref);
-    h_avg = (tspan(2)-tspan(1))/N;
+    N = ceil((tspan(end)-tspan(1))/h_ref);
+    h_avg = (tspan(end)-tspan(1))/N;
 
-    t_list = linspace(tspan(1),tspan(2),N+1)';
+    t_list = linspace(tspan(1),tspan(end),N+1)';
     X_list = zeros(N+1,numel(X0));
     X_list(1,:) = X0(:)';
 
     XA = X0;
     for n = 1:N
         [XB,num] = explicit_RK_step(rate_func_in,t_list(n),XA,h_avg, BT_struct);
-        X_list(n+1,:) = XB(:)';
+        X_list(n+1,:) = XB(:, 1)';
         XA = XB;
         num_evals = num_evals + num;
     end
