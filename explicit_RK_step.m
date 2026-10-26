@@ -26,7 +26,7 @@ function [XB, num_evals_temp] = explicit_RK_step(rate_func_in,t,XA,h,BT_struct)
 
     for i=2:total
         sum_val1 = K*(A(i-1,:)');
-        K(:, i)=rate_func_in(t+C(i-1)*h,XA+h*sum_val1);
+        K(:, i)=rate_func_in(t+C(i)*h,XA+h*sum_val1);
         num_evals_temp=num_evals_temp+1;
     end
     sum_val2 = K*B;

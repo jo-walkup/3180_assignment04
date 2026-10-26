@@ -1,0 +1,242 @@
+close all;
+clear;
+
+set(groot, 'defaultTextInterpreter', 'latex');
+set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
+set(groot, 'defaultLegendInterpreter', 'latex');
+
+% Dormand-Prince Butcher Tableau
+
+DormandPrince = struct();
+
+DormandPrince.C = ...
+    [0, 1/5, 3/10, 4/5, 8/9, 1, 1];
+
+DormandPrince.B = ...
+    [35/384, 0, 500/1113, 125/192, ...
+     -2187/6784, 11/84, 0;
+     5179/57600, 0, 7571/16695, 393/640, ...
+     -92097/339200, 187/2100, 1/40];
+
+DormandPrince.A = ...
+    [0, 0, 0, 0, 0, 0, 0;
+     1/5, 0, 0, 0, 0, 0, 0;
+     3/40, 9/40, 0, 0, 0, 0, 0;
+     44/45, -56/15, 32/9, 0, 0, 0, 0;
+     19372/6561, -25360/2187, 64448/6561, ...
+        -212/729, 0, 0, 0;
+     9017/3168, -355/33, 46732/5247, ...
+        49/176, -5103/18656, 0, 0;
+     35/384, 0, 500/1113, 125/192, ...
+        -2187/6784, 11/84, 0];
+
+
+% Planet Parameters
+
+orbit_params = struct();
+
+orbit_params.m_sun = 1;
+orbit_params.m_planet = 1;
+orbit_params.G = 40;
+
+x0 = 8;
+y0 = 0;
+vx0 = 0;
+vy0 = 1.5;
+
+V0 = [x0; y0; vx0; vy0];
+
+% Gravity Rate Function
+
+G_rate = @(t,V) gravity_rate_func(t,V,orbit_params);
+
+
+% Reference Time
+
+% Reference point along the orbit
+t_ref = 1;
+
+% Exact state at t_ref
+VA = compute_planetary_motion(t_ref, V0, orbit_params);
+
+
+% Step Sizes
+
+h_list = logspace(-2,log10(0.2),80);
+
+
+% Initialize Error Arrays
+
+error_DP5 = zeros(size(h_list));
+error_DP4 = zeros(size(h_list));
+error_difference = zeros(size(h_list));
+diff = zeros(size(h_list));
+
+
+%% Calculate Local Truncation Errors
+
+for i = 1:length(h_list)
+
+    h = h_list(i);
+
+    % Take one embedded Dormand-Prince step
+    [XB1,XB2,~] =  RK_step_embedded(G_rate, t_ref, VA,h,DormandPrince);
+
+    % Exact state at t_ref + h
+    V_exact = compute_planetary_motion(t_ref+h, V0,orbit_params);
+
+
+    % Local error of Dormand-Prince 5th-order estimate
+    error_DP5(i) = norm(XB1 - V_exact);
+
+
+    % Local error of Dormand-Prince 4th-order estimate
+    error_DP4(i) = norm(XB2 - V_exact);
+
+
+    % Difference between embedded estimates
+    error_difference(i) = norm(XB1 - XB2);
+
+end
+
+loglog(h_list, error_DP5, "b.", MarkerSize=10); hold on
+loglog(h_list, error_DP4, "k.", MarkerSize=15); hold on
+loglog(h_list, error_difference, "r.", MarkerSize=10);
+title("Local Truncation Error for Explicit Methods",'FontSize',13);
+xlabel("$h_{avg} (-)$ ",'FontSize',13);
+ylabel("Global Truncation error $(-)$",'FontSize',13)
+legend("Dorman-Prince 5th order error", "Dormand-Prince 4th order error", "Difference", 'FontSize',11, "Location", "southeast")
+myfig = gcf();
+exportgraphics(myfig , 'global_err_dp45diff.png', 'Resolution', 600);
+
+
+
+%% Choose Region for Regression
+
+% Avoid very small errors where numerical roundoff
+% can affect the measured slope.
+
+fit_idx = (h_list >= 0.02) & (h_list <= 0.15);
+
+h_fit = h_list(fit_idx);
+
+
+% Dormand-Prince 5th-Order Scaling
+
+coeff_DP5 = polyfit(log(h_fit), log(error_DP5(fit_idx)), 1);
+p_DP5 = coeff_DP5(1);
+
+
+% Dormand-Prince 4th-Order Scaling
+
+coeff_DP4 = polyfit(log(h_fit), log(error_DP4(fit_idx)), 1);
+
+p_DP4 = coeff_DP4(1);
+
+
+% Difference Scaling
+
+coeff_difference = polyfit(log(h_fit), log(error_difference(fit_idx)), 1);
+
+p_difference = coeff_difference(1);
+
+
+%% Create Table
+
+% Method = ["Dormand-Prince 5th-order estimate";
+%      "Dormand-Prince 4th-order estimate";
+%      "|XB1 - XB2|"];
+% 
+% Scaling_p = round([p_DP5;
+%                     p_DP4;
+%                 p_difference], 3);
+% 
+% Embedded_RK_Table = table(Method, Scaling_p, 'VariableNames',{'Method','p'});
+% 
+% disp(Embedded_RK_Table);
+
+
+
+%% Helper Functions
+
+
+
+% Computes one step using an embedded explicit Runge-Kutta method
+function [XB1,XB2,num_evals, diff] = RK_step_embedded( rate_func_in,t,XA,h,BT_struct)
+    diff = norm(rate_func_in(t + h) - rate_func_in(t))
+    % Extract Butcher tableau
+    A = BT_struct.A;
+    B = BT_struct.B;
+    C = BT_struct.C(:);
+
+    % Number of RK stages
+    num_stages = size(A,1);
+
+    % Store k1, k2, ..., ks
+    K = zeros( ...
+        numel(XA), ...
+        num_stages);
+
+
+    %% Calculate RK stages
+
+    for i = 1:num_stages
+
+        if i == 1
+
+            sum_val = zeros(size(XA));
+
+        else
+
+            sum_val = ...
+                K(:,1:i-1) ...
+                * A(i,1:i-1)';
+
+        end
+
+
+        K(:,i) = ...
+            rate_func_in( ...
+            t + C(i)*h, ...
+            XA + h*sum_val);
+
+    end
+
+    % Dormand-Prince 5th-order estimate
+    XB1 = XA + h*(K*B(1,:)');
+
+
+    % Dormand-Prince 4th-order estimate
+    XB2 = XA + h*(K*B(2,:)');
+
+
+    % One rate-function evaluation per stage
+    num_evals = num_stages;
+
+end
+
+function dVdt = gravity_rate_func(t,V,orbit_params)
+
+    m_sun = orbit_params.m_sun;
+    G = orbit_params.G;
+
+    x = V(1);
+    y = V(2);
+
+    vx = V(3);
+    vy = V(4);
+
+    % Distance between planet and sun
+    r = sqrt(x^2 + y^2);
+
+    % Gravitational acceleration
+    ax = -(m_sun*G/r^3)*x;
+    ay = -(m_sun*G/r^3)*y;
+
+    % State derivative
+    dVdt = [vx;
+            vy;
+            ax;
+            ay];
+
+end

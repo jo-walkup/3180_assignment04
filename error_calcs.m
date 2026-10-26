@@ -18,7 +18,7 @@ function error_calcs()
     BT_em.B=[0;1];
     BT_em.C=[0; 0.5];
 
-    hs = logspace(-4.5,-1,10);
+    hs = logspace(-3,-1,100);
 
     global_errors_fe = zeros(size(hs));
     global_errors_em = zeros(size(hs));
@@ -28,7 +28,7 @@ function error_calcs()
     h_avg_list_em = zeros(size(hs));
     h_avg_list_rk = zeros(size(hs));
 
-    time_int = [0, 100];
+    time_int = [0, 10];
 
     orbit_params = struct();
     orbit_params.m_sun = 1;
@@ -40,7 +40,7 @@ function error_calcs()
     dydt0 = 1.5;
 
     V0 = [x0;y0;dxdt0;dydt0];
-    t_range = linspace(0,30,100);
+    t_range = linspace(0,10,100);
     V_list = compute_planetary_motion(t_range,V0,orbit_params);
     h_ref=0.005;
 

@@ -37,7 +37,7 @@ function usage_example_forwardE()
     V0 = [x0;y0;dxdt0;dydt0];
     t_range = linspace(0,30,100);
     V_list = compute_planetary_motion(t_range,V0,orbit_params);
-    h_ref=0.005;
+    h_ref=0.0005;
 
     G_rate= @(t,v) gravity_rate_func(t, v,orbit_params);
     

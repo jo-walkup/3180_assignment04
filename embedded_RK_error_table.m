@@ -1,5 +1,10 @@
 close all;
 clear;
+
+set(groot, 'defaultTextInterpreter', 'latex');
+set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
+set(groot, 'defaultLegendInterpreter', 'latex');
+
 % Dormand-Prince Butcher Tableau
 
 DormandPrince = struct();
@@ -65,6 +70,7 @@ h_list = logspace(-2,log10(0.2),80);
 error_DP5 = zeros(size(h_list));
 error_DP4 = zeros(size(h_list));
 error_difference = zeros(size(h_list));
+diffs = zeros(size(h_list));
 
 
 %% Calculate Local Truncation Errors
@@ -74,10 +80,11 @@ for i = 1:length(h_list)
     h = h_list(i);
 
     % Take one embedded Dormand-Prince step
-    [XB1,XB2,~] =  RK_step_embedded(G_rate, t_ref, VA,h,DormandPrince);
+    [XB1,XB2,~, diff] =  RK_step_embedded(G_rate, t_ref, VA,h,DormandPrince);
 
     % Exact state at t_ref + h
     V_exact = compute_planetary_motion(t_ref+h, V0,orbit_params);
+    diffs(i) = norm(V_exact - compute_planetary_motion(t_ref, V0,orbit_params));
 
 
     % Local error of Dormand-Prince 5th-order estimate
@@ -92,6 +99,18 @@ for i = 1:length(h_list)
     error_difference(i) = norm(XB1 - XB2);
 
 end
+
+loglog(h_list, error_DP5, "b.", MarkerSize=10); hold on
+loglog(h_list, error_DP4, "k.", MarkerSize=15); hold on
+loglog(h_list, error_difference, "r.", MarkerSize=10);
+loglog(h_list, diffs, "g.", MarkerSize=10);
+title("Local Truncation Error for Dormand-Prince",'FontSize',13);
+xlabel("$h_{avg} (-)$ ",'FontSize',13);
+ylabel("Local Truncation error $(-)$",'FontSize',13)
+legend("Dorman-Prince 5th order error", "Dormand-Prince 4th order error", "Method difference", "$|f(t_{ref} + h) -  f(t_{ref})|$", 'FontSize',11, "Location", "west")
+myfig = gcf();
+exportgraphics(myfig , 'global_err_dp45diff.png', 'Resolution', 600);
+
 
 
 %% Choose Region for Regression
@@ -126,24 +145,27 @@ p_difference = coeff_difference(1);
 
 %% Create Table
 
-Method = ["Dormand-Prince 5th-order estimate";
-     "Dormand-Prince 4th-order estimate";
-     "|XB1 - XB2|"];
+% Method = ["Dormand-Prince 5th-order estimate";
+%      "Dormand-Prince 4th-order estimate";
+%      "|XB1 - XB2|"];
+% 
+% Scaling_p = round([p_DP5;
+%                     p_DP4;
+%                 p_difference], 3);
+% 
+% Embedded_RK_Table = table(Method, Scaling_p, 'VariableNames',{'Method','p'});
+% 
+% disp(Embedded_RK_Table);
 
-Scaling_p = round([p_DP5;
-                    p_DP4;
-                p_difference], 3);
 
-Embedded_RK_Table = table(Method, Scaling_p, 'VariableNames',{'Method','p'});
-
-disp(Embedded_RK_Table);
 
 %% Helper Functions
 
 
-% Computes one step using an embedded explicit Runge-Kutta method
-function [XB1,XB2,num_evals] = RK_step_embedded( rate_func_in,t,XA,h,BT_struct)
 
+% Computes one step using an embedded explicit Runge-Kutta method
+function [XB1,XB2,num_evals, diff] = RK_step_embedded( rate_func_in,t,XA,h,BT_struct)
+    diff = norm(rate_func_in(t + h, XA) - rate_func_in(t, XA));
     % Extract Butcher tableau
     A = BT_struct.A;
     B = BT_struct.B;
