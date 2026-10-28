@@ -1,5 +1,11 @@
 function error_calcs()
 
+    set(groot, 'defaultTextInterpreter', 'latex');
+    set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
+    set(groot, 'defaultLegendInterpreter', 'latex');
+    clf();
+    clear all;
+
     BT_fe=struct();
 
     BT_fe.A=[0];
@@ -18,7 +24,7 @@ function error_calcs()
     BT_em.B=[0;1];
     BT_em.C=[0; 0.5];
 
-    hs = logspace(-3,-1,100);
+    hs = logspace(-3.5,-1,10);
 
     global_errors_fe = zeros(size(hs));
     global_errors_em = zeros(size(hs));
@@ -28,7 +34,7 @@ function error_calcs()
     h_avg_list_em = zeros(size(hs));
     h_avg_list_rk = zeros(size(hs));
 
-    time_int = [0, 10];
+    time_int = [0, 30];
 
     orbit_params = struct();
     orbit_params.m_sun = 1;
@@ -40,7 +46,7 @@ function error_calcs()
     dydt0 = 1.5;
 
     V0 = [x0;y0;dxdt0;dydt0];
-    t_range = linspace(0,10,100);
+    t_range = linspace(0,30,100);
     V_list = compute_planetary_motion(t_range,V0,orbit_params);
     h_ref=0.005;
 
@@ -48,15 +54,15 @@ function error_calcs()
     
     for n = 1:length(hs)
         h = hs(n);
-        [g_efe,h_avgfe, evalfe] = global_error(G_rate, V_list, compute_planetary_motion(time_int(1), V0, orbit_params), time_int, h, BT_fe);
+        [g_efe,h_avgfe, evalfe] = global_error(G_rate, V_list, V0, time_int, h, BT_fe);
         global_errors_fe(n) = g_efe;
         h_avg_list_fe(n) = h_avgfe;
 
-        [g_eem,h_avgem, evalem] = global_error(G_rate, V_list, compute_planetary_motion(time_int(1), V0, orbit_params), time_int, h, BT_em);
+        [g_eem,h_avgem, evalem] = global_error(G_rate, V_list, V0, time_int, h, BT_em);
         global_errors_em(n) = g_eem;
         h_avg_list_em(n) = h_avgem;
-
-        [g_erk,h_avgrk, evalrk] = global_error(G_rate, V_list, compute_planetary_motion(time_int(1), V0, orbit_params), time_int, h, BT_rk);
+% compute_planetary_motion(time_int(1), V0, orbit_params)
+        [g_erk,h_avgrk, evalrk] = global_error(G_rate, V_list, V0, time_int, h, BT_rk);
         global_errors_rk(n) = g_erk;
         h_avg_list_rk(n) = h_avgrk;
     end
