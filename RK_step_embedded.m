@@ -1,35 +1,52 @@
-%This function computes the value of X at the next time step
-%for any arbitrary embedded RK method
-%INPUTS:
-%rate_func_in: the function used to compute dXdt. rate_func_in will
-% have the form: dXdt = rate_func_in(t,X) (t is before X)
-%t: the value of time at the current step
-%XA: the value of X(t)
-%h: the time increment for a single step i.e. delta_t = t_{n+1} - t_{n}
-%BT_struct: a struct that contains the Butcher tableau
-% BT_struct.A: matrix of a_{ij} values
-% BT_struct.B: vector of b_i values
-% BT_struct.C: vector of c_i values
-%OUTPUTS:
-%XB1: the approximate value for X(t+h) using the first row of the Tableau
-%XB2: the approximate value for X(t+h) using the second row of the Tableau
-%num_evals: A count of the number of times that you called
-% rate_func_in when computing the next step
-function [XB1, XB2, num_evals] = RK_step_embedded(rate_func_in,t,XA,h,BT_struct)
-    A=BT_struct.A;
-    B=BT_struct.B;
-    C=BT_struct.C;
-    num_evals_temp = 0;
-    total=length(B);
-    K = zeros(length(XA), total);
-    K(:, 1) = rate_func_in(t, XA);
+function [XB1,XB2,num_evals, diff] = RK_step_embedded( rate_func_in,t,XA,h,BT_struct)
+    diff = norm(rate_func_in(t + h, XA) - rate_func_in(t, XA));
+    % Extract Butcher tableau
+    A = BT_struct.A;
+    B = BT_struct.B;
+    C = BT_struct.C(:);
 
-    for i=2:total
-        sum_val1 = K*(A(i-1,:)');
-        K(:, i)=rate_func_in(t+C(i)*h,XA+h*sum_val1);
-        num_evals_temp=num_evals_temp+1;
+    % Number of RK stages
+    num_stages = size(A,1);
+
+    % Store k1, k2, ..., ks
+    K = zeros( ...
+        numel(XA), ...
+        num_stages);
+
+
+    %% Calculate RK stages
+
+    for i = 1:num_stages
+
+        if i == 1
+
+            sum_val = zeros(size(XA));
+
+        else
+
+            sum_val = ...
+                K(:,1:i-1) ...
+                * A(i,1:i-1)';
+
+        end
+
+
+        K(:,i) = ...
+            rate_func_in( ...
+            t + C(i)*h, ...
+            XA + h*sum_val);
+
     end
-    sum_val2 = K*B;
-  
-    XB=XA+h*sum_val2;
+
+    % Dormand-Prince 5th-order estimate
+    XB1 = XA + h*(K*B(1,:)');
+
+
+    % Dormand-Prince 4th-order estimate
+    XB2 = XA + h*(K*B(2,:)');
+
+
+    % One rate-function evaluation per stage
+    num_evals = num_stages;
+
 end
