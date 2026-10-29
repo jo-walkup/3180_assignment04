@@ -6,11 +6,12 @@ function error_calcs()
     clf();
     clear all;
 
+    % ralston
     BT_fe=struct();
 
-    BT_fe.A=[0];
-    BT_fe.B=[1];
-    BT_fe.C=[0];
+    BT_fe.A=[0, 0; 2/3, 0];
+    BT_fe.B=[1/4; 3/4];
+    BT_fe.C=[0; 2/3];
 
     BT_rk=struct();
 
@@ -24,7 +25,19 @@ function error_calcs()
     BT_em.B=[0;1];
     BT_em.C=[0; 0.5];
 
-    hs = logspace(-3.5,-1,10);
+    BT_ny = struct();
+
+    BT_ny.A = [0, 0, 0, 0, 0, 0;...
+               1/3, 0, 0, 0, 0, 0;...
+               4/25, 6/25, 0, 0, 0, 0;...
+               1/4, -3, 15/4, 0, 0, 0;...
+               2/27, 10/9, -50/81, 8/81, 0, 0;...
+               2/25, 12/25, 2/15, 8/75, 0, 0];
+    BT_ny.B = [23/192; 0; 125/192; 0; -27/64; 125/192];
+    BT_ny.C = [0; 1/3; 2/5; 1; 2/3; 4/5];
+
+    hs = logspace(-3,0,51);
+    
 
     global_errors_fe = zeros(size(hs));
     global_errors_em = zeros(size(hs));
@@ -34,7 +47,10 @@ function error_calcs()
     h_avg_list_em = zeros(size(hs));
     h_avg_list_rk = zeros(size(hs));
 
-    time_int = [0, 30];
+    tstart = 0;
+    tend = 3;
+
+    time_int = [tstart, tend];
 
     orbit_params = struct();
     orbit_params.m_sun = 1;
@@ -46,7 +62,7 @@ function error_calcs()
     dydt0 = 1.5;
 
     V0 = [x0;y0;dxdt0;dydt0];
-    t_range = linspace(0,30,100);
+    t_range = linspace(tstart,tend,100);
     V_list = compute_planetary_motion(t_range,V0,orbit_params);
     h_ref=0.005;
 
@@ -58,7 +74,7 @@ function error_calcs()
         global_errors_fe(n) = g_efe;
         h_avg_list_fe(n) = h_avgfe;
 
-        [g_eem,h_avgem, evalem] = global_error(G_rate, V_list, V0, time_int, h, BT_em);
+        [g_eem,h_avgem, evalem] = global_error(G_rate, V_list, V0, time_int, h, BT_ny);
         global_errors_em(n) = g_eem;
         h_avg_list_em(n) = h_avgem;
 % compute_planetary_motion(time_int(1), V0, orbit_params)
@@ -89,8 +105,13 @@ function error_calcs()
     title("Global Truncation Error for Various Runge-Kutta Methods",'FontSize',13);
     xlabel("$h_{avg} (-)$ ",'FontSize',13);
     ylabel("Global Truncation error $(-)$",'FontSize',13)
-    legend("Forward Euler error", "Forward Euler fit", "Implicit midpoint error", "Implicit midpoint fit", "RK4 error", "RK4 fit", 'FontSize',11, "Location", "northwest")
+    legend("Ralston error", "Ralston fit", "Nystrom error", "Nystrom fit", "RK4 error", "RK4 fit", 'FontSize',11, "Location", "SOUTHEAST")
 
     myfig = gcf();
     exportgraphics(myfig , 'global_err_explicit_01.png', 'Resolution', 600);
+
+
+
+
+   
 end

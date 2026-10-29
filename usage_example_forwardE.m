@@ -6,11 +6,12 @@ function usage_example_forwardE()
     clf();
     clear all;
 
+    % Ralston
     BT_fe=struct();
 
-    BT_fe.A=[0];
-    BT_fe.B=[1];
-    BT_fe.C=[0];
+    BT_fe.A=[0, 0; 2/3, 0];
+    BT_fe.B=[1/4; 3/4];
+    BT_fe.C=[0; 2/3];
 
     BT_rk4=struct();
 
@@ -18,11 +19,12 @@ function usage_example_forwardE()
     BT_rk4.B=[1/6; 1/3; 1/3; 1/6];
     BT_rk4.C=[0; 0.5; 0.5; 1];
 
+    % Heun
     BT_em=struct();
 
-    BT_em.A=[0, 0; 0.5, 0];
-    BT_em.B=[0;1];
-    BT_em.C=[0; 0.5];
+    BT_em.A=[0, 0; 1, 0];
+    BT_em.B=[1/2;1/2];
+    BT_em.C=[0; 1];
     
     orbit_params = struct();
     orbit_params.m_sun = 1;
@@ -67,7 +69,7 @@ function usage_example_forwardE()
     plot(t_list_em,X_list_em(:,1),'m--');
     xlabel("Time (-)", FontSize=13);
     ylabel("X position(-)", FontSize=13);
-    title("Comparison of Methods", FontSize=13);
+    title("Integration of a Planetary System via Several Runge-Kutta Methods", FontSize=13);
     
     subplot(2,1,2); 
     plot(t_range, V_list(:, 2), 'g'); hold on
@@ -77,7 +79,7 @@ function usage_example_forwardE()
     xlabel("Time (-)", FontSize=13);
     ylabel("Y position (-)", FontSize=13);
 
-    mylegend = legend("Analytical", "Forward Euler", "RK4", "Explicit Midpoint", FontSize=11);
+    mylegend = legend("Analytical", "Ralston", "RK4", "Heun", FontSize=11);
     set(mylegend, "location", "southoutside", "orientation", "horizontal")
 
     myfig = gcf();
