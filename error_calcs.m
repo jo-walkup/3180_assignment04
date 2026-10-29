@@ -93,12 +93,12 @@ function error_calcs()
     loglog(hs, globalfit_fe, "r", LineWidth=3);
 
     loglog(h_avg_list_em, global_errors_em, "m.", MarkerSize=10); hold on
-    coeffs_em = polyfit(log(hs), log(global_errors_em), 1);
+    coeffs_em = polyfit(log(hs(23:end)), log(global_errors_em(23:end)), 1); % THIS FILTERING IS SO CHOPPED!!!! MANUALLY PICKING THE LINEAR SECTION BUT WHO GAF
     globalfit_em = exp(polyval(coeffs_em, log(hs)));
     loglog(hs, globalfit_em, "g", LineWidth=1);
 
     loglog(h_avg_list_rk, global_errors_rk, "k.", MarkerSize=5); hold on
-    coeffs_rk = polyfit(log(hs), log(global_errors_rk), 1);
+    coeffs_rk = polyfit(log(hs(13:end)), log(global_errors_rk(13:end)), 1);
     globalfit_rk = exp(polyval(coeffs_rk, log(hs)));
     loglog(hs, globalfit_rk, "c", LineWidth=1);
     
