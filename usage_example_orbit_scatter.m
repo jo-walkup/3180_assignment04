@@ -57,7 +57,7 @@ DormandPrince.A = ...
         -2187/6784, 11/84, 0];
 
     V0 = [x0;y0;dxdt0;dydt0];
-    t_range = linspace(0,30,100);
+    t_range = [0,10];
     V_list = compute_planetary_motion(t_range,V0,orbit_params);
 
     h_ref=0.0005;
@@ -75,8 +75,10 @@ DormandPrince.A = ...
     % for n = 1:length(hs)
         % h = hs(n);
         [t_list,X_list,h_avg, num_evals, failed_steps_rate] = explicit_RK_variable_step_integration(G_rate,t_range,V0,h_ref,DormandPrince,p,error_desired);
+        
         h_list = diff(t_list);
 
+        X_list
         x_vals=X_list(:,1);
         y_vals=X_list(:,2);
         distance=sqrt(x_vals.^2+y_vals.^2);
@@ -85,10 +87,24 @@ DormandPrince.A = ...
         % distances(n) = distance;
 
     % end
-    distance
     h_list
+    distance
 
-    loglog(distance(1:59),h_list, "b.", MarkerSize=20);
+    % plot(t_range, V_list(:, 2), 'g'); hold on
+    % plot(t_list,X_list(:,2),'k.');
+    % hold off
+
+
+    plot(distance(1:(length(h_list))),h_list, "b.", MarkerSize=20); hold on;
+
+    coeffs = polyfit((distance(1:(length(h_list)))), (h_list), 1);
+    fit = exp(polyval(coeffs, (distance(1:(length(h_list))))));
+    plot(distance(1:(length(h_list))), fit, "c", LineWidth=1);
+
+    xlabel("Distance of Planet from Sun (-)")
+    ylabel("Step Size (-)")
+    title("Step Size as a Function of Distance of Planet from Sun")
+    legend("RK4", "RK4 Fit")
 
     myfig = gcf();
     exportgraphics(myfig , 'planetary_motion_scatter.png', 'Resolution', 600);
